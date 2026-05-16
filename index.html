@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Musholla Wakaf An-Nur - Laporan Infaq Digital</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+        }
+        /* Kustomisasi scrollbar halus bertema dark mode */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #21262d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00FF66;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-6 px-4 flex justify-center items-start">
+
+    <div class="w-full max-w-xl flex flex-col gap-4">
+        
+        <div class="bg-[#072517] border border-[#00FF66]/20 text-white text-center py-4 rounded-2xl shadow-lg relative overflow-hidden">
+            <div class="absolute -right-6 -top-6 w-16 h-16 bg-[#00FF66]/10 rounded-full blur-xl"></div>
+            <h1 class="font-extrabold text-base tracking-wide uppercase text-[#00FF66]">MUSHOLLA WAKAF AN-NUR</h1>
+            <p class="text-[10px] text-emerald-400 font-medium uppercase tracking-widest mt-0.5">LAPORAN INFAQ DIGITAL SYSTEM</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-[#111827] to-[#1f2937] border border-gray-800 text-white text-center py-6 rounded-2xl shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500 via-[#00FF66] to-cyan-500"></div>
+            
+            <div class="flex items-center justify-center gap-1.5 mb-2">
+                <span class="flex h-2 w-2 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00FF66] opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-[#00FF66]"></span>
+                </span>
+                <p class="text-[10px] text-[#00FF66] font-bold tracking-widest uppercase">SYSTEM ONLINE</p>
+            </div>
+            
+            <p class="text-xs text-gray-400 mb-1 font-medium tracking-wide">SALDO INFAQ SAAT INI</p>
+            <p id="total-saldo" class="text-3xl font-extrabold tracking-tight text-white">Rp 0</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-[#161b22] border border-emerald-950 p-4 rounded-2xl shadow-md relative overflow-hidden">
+                <div class="absolute top-0 left-0 bottom-0 w-[4px] bg-[#00FF66]"></div>
+                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-1">Total Pemasukan</p>
+                <p id="total-pemasukan" class="text-lg font-extrabold text-[#00FF66]">Rp 0</p>
+            </div>
+            <div class="bg-[#161b22] border border-red-950 p-4 rounded-2xl shadow-md relative overflow-hidden">
+                <div class="absolute top-0 left-0 bottom-0 w-[4px] bg-red-500"></div>
+                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-1">Total Pengeluaran</p>
+                <p id="total-pengeluaran" class="text-lg font-extrabold text-red-400">Rp 0</p>
+            </div>
+        </div>
+
+        <div class="bg-[#161b22] border border-gray-800 rounded-3xl p-5 shadow-lg">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-white font-extrabold text-sm tracking-wide uppercase border-b-2 border-[#00FF66] pb-1">Laporan Mutasi Infaq</h2>
+                <span id="loading-status" class="text-[10px] text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full animate-pulse">Memuat data...</span>
+            </div>
+            
+            <div class="grid grid-cols-12 text-[10px] font-bold text-gray-400 uppercase border-b border-gray-800 pb-2 mb-3 tracking-wider">
+                <div class="col-span-5">Keterangan</div>
+                <div class="col-span-2 text-right">Masuk</div>
+                <div class="col-span-2 text-right">Keluar</div>
+                <div class="col-span-3 text-right">Saldo</div>
+            </div>
+
+            <div id="mutasi-list" class="flex flex-col gap-3.5 text-xs">
+                </div>
+        </div>
+
+        <div class="bg-[#0d1117] border border-dashed border-gray-800 rounded-xl p-3 text-center">
+            <p class="text-[10px] text-gray-500">Aplikasi terintegrasi live dengan Google Sheets via Cloud System API Cluster.</p>
+        </div>
+        
+    </div>
+
+    <script>
+        // =========================================================================
+        // PENTING: Ganti URL di bawah ini dengan URL Web App dari Google Apps Script Anda!
+        // =========================================================================
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzXXXXXXXXXXXXX/exec";
+
+        // Backup Data Statis (Otomatis tampil jika URL di atas belum Anda ganti/masih bawaan template)
+        const fallbackData = [
+            { tanggal: "2025", keterangan: "SALDO INFAQ AWAL", masuk: 1000000, keluar: 0, nota: "" },
+            { tanggal: "2025", keterangan: "HAMBA ALLAH", masuk: 50000, keluar: 0, nota: "" },
+            { tanggal: "2025", keterangan: "PEMBELIAN PASIR", masuk: 0, keluar: 400000, nota: "https://google.com" },
+            { tanggal: "2025", keterangan: "KONSUMSI MAKAN SIANG", masuk: 0, keluar: 90000, nota: "https://google.com" },
+            { tanggal: "2026", keterangan: "HAMBA ALLAH", masuk: 150000, keluar: 0, nota: "" },
+            { tanggal: "2026", keterangan: "KERAMIK 5 DUS", masuk: 0, keluar: 360000, nota: "https://google.com" },
+            { tanggal: "2026", keterangan: "DANA INFAQ", masuk: 250000, keluar: 0, nota: "" }
+        ];
+
+        // Format angka ke format mata uang Rupiah standard
+        function formatRupiah(angka) {
+            return "Rp " + new Intl.NumberFormat('id-ID').format(angka);
+        }
+
+        // Fungsi utama menyusun baris tabel mutasi keuangan secara berurutan
+        function renderData(rows) {
+            const container = document.getElementById("mutasi-list");
+            container.innerHTML = "";
+            
+            let runningSaldo = 0;
+            let totalMasuk = 0;
+            let totalKeluar = 0;
+
+            rows.forEach(item => {
+                const masuk = parseInt(item.masuk) || 0;
+                const keluar = parseInt(item.keluar) || 0;
+                
+                totalMasuk += masuk;
+                totalKeluar += keluar;
+                runningSaldo += (masuk - keluar);
+
+                // Membuat elemen pembungkus baris tabel kustom
+                const rowDiv = document.createElement("div");
+                rowDiv.className = "grid grid-cols-12 items-start py-1.5 border-b border-gray-900/50";
+
+                // Memproses Nota Bukti Fisik
+                let notaHtml = "";
+                if (item.nota && item.nota.trim() !== "") {
+                    notaHtml = `<br><a href="${item.nota}" target="_blank" class="text-[10px] text-cyan-400 hover:text-[#00FF66] underline">Lihat Foto Nota</a>`;
+                }
+
+                // Kolom 1: Informasi Deskripsi Transaksi
+                const colKet = document.createElement("div");
+                colKet.className = "col-span-5 pr-1";
+                colKet.innerHTML = `<span class="text-gray-500 font-normal">/${item.tanggal}</span> <span class="font-semibold text-gray-300 uppercase">${item.keterangan}</span>${notaHtml}`;
+                
+                // Kolom 2: Arus Masuk (Hijau Neon)
+                const colMasuk = document.createElement("div");
+                colMasuk.className = "col-span-2 text-right font-medium text-[#00FF66]";
+                colMasuk.innerText = masuk > 0 ? formatRupiah(masuk).replace("Rp ", "") : "-";
+
+                // Kolom 3: Arus Keluar (Merah Soft)
+                const colKeluar = document.createElement("div");
+                colKeluar.className = "col-span-2 text-right font-medium text-red-400";
+                colKeluar.innerText = keluar > 0 ? formatRupiah(keluar).replace("Rp ", "") : "-";
+
+                // Kolom 4: Total Kalkulasi Saldo Berjalan (Biru Soft)
+                const colSaldo = document.createElement("div");
+                colSaldo.className = "col-span-3 text-right font-semibold text-blue-400";
+                colSaldo.innerText = formatRupiah(runningSaldo);
+
+                // Masukkan komponen kolom ke dalam baris grid
+                rowDiv.appendChild(colKet);
+                rowDiv.appendChild(colMasuk);
+                rowDiv.appendChild(colKeluar);
+                rowDiv.appendChild(colSaldo);
+                container.appendChild(rowDiv);
+            });
+
+            // Update Panel Utama Ringkasan Atas
+            document.getElementById("total-saldo").innerText = formatRupiah(runningSaldo);
+            document.getElementById("total-pemasukan").innerText = formatRupiah(totalMasuk);
+            document.getElementById("total-pengeluaran").innerText = formatRupiah(totalKeluar);
+        }
+
+        // Mengambil data secara live dari cloud server endpoint google sheets
+        async function fetchLiveInfaqData() {
+            const statusBadge = document.getElementById("loading-status");
+            try {
+                // Pengecekan otomatis jika user belum mengubah URL bawaan template
+                if (WEB_APP_URL.includes("XXXXXXXXXXXXX")) {
+                    console.log("Menjalankan mode demonstrasi.");
+                    statusBadge.innerText = "Mode Demo";
+                    statusBadge.className = "text-[10px] text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded-full border border-amber-500/30";
+                    renderData(fallbackData);
+                    return;
+                }
+
+                const response = await fetch(WEB_APP_URL);
+                if (!response.ok) throw new Error("Koneksi API Gagal");
+                
+                const data = await response.json();
+                renderData(data);
+                
+                statusBadge.innerText = "Live Terupdate";
+                statusBadge.className = "text-[10px] text-[#00FF66] bg-emerald-950 px-2 py-0.5 rounded-full border border-[#00FF66]/30";
+            } catch (error) {
+                console.error("Sinkronisasi gagal:", error);
+                statusBadge.innerText = "Gagal Sinkronisasi";
+                statusBadge.className = "text-[10px] text-red-400 bg-red-950 px-2 py-0.5 rounded-full border border-red-500/30";
+                // Menggunakan data cadangan agar tampilan web tidak hancur/kosong saat koneksi putus
+                renderData(fallbackData);
+            }
+        }
+
+        // Menjalankan fungsi sinkronisasi sesaat setelah web selesai dimuat sempurna
+        window.addEventListener("DOMContentLoaded", fetchLiveInfaqData);
+    </script>
+</body>
+</html>
